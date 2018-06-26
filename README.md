@@ -4,68 +4,96 @@
 This project is a tool to modify bitwardens core dll to allow me to self license.
 Beware this does janky IL magic to rewrite the bitwarden core dll and install my self signed certificate.
 
-## Building
+## Step by step instructions
 
-To build your own `bitwarden/api` image run
+### Preperations for local building (without docker build environment)
+https://www.microsoft.com/net/download/linux-package-manager/ubuntu16-04/sdk-current
 ```bash
-./build.sh
+cd <location of BitBetter>
 ```
 
-replace anywhere `bitwarden/api` is used with `bitbetter/api` and give it a go. no promises
-
-## Issuing your own licenses
-
-The repo is setup to replace the licesning signing cert in bitwarden.core with my own personal self signed cert (`cert.cert`)
-If you want to be able to sign your own licenses obviously you'll have to replace it with your own self signed cert.
-
-you can generate one with openssl like so:
+### Generate Keys
+```bash
+cd .keys
+rm *
+```
+Generate a new key. Use "test" as password!
 ```bash
 openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.cert -days 36500 -outform DER
 ```
-
-### Convert your DER certificate to a PEM
-
+Convert your DER certificate to a PEM
 ```bash
 openssl x509 -inform DER -in cert.cert -out cert.pem
 ```
-
-### Convert your public and private key into a PKCS12/PFX
-
+Convert your public and private key into a PKCS12/PFX. Also use "test" as output password (licenseGen Tool has test as hardcoded password)
 ```bash
 openssl pkcs12 -export -out cert.pfx -inkey key.pem -in cert.pem
 ```
-
-### Signing licesnses
-
-There is a tool included to generate a license (see `src/liceseGen/`)
-
-generate a PFX above using a password of `test` and then build the tool using:
-
+Change back to main directory of BitBetter
 ```bash
+cd ..
+```
+
+### Building
+```bash
+./build.sh
 ./src/licenseGen/build.sh
 ```
 
-This tool build ontop of the bitbetter/api container image so make sure you've built that above using the root `./build.sh` script.
+### Deploying newly build Docker Image
+The build process creates a local docker image called `bitbetter/api` which replaces `bitwarden/api`.
 
-After that you can run the tool using:
+To replace the image copy the file `<bitwarden home>/bwdata/docker/docker-compose.yml` to `<bitwarden home>/bwdata/docker/docker-compose.override.yml`.
+Change the contents of the override file to the following:
+```
+# https://docs.docker.com/compose/compose-file/
+# Parameter:MssqlDataDockerVolume=False
+# Parameter:HttpPort=80
+# Parameter:HttpsPort=443
+# Parameter:CoreVersion=1.20.0
+# Parameter:WebVersion=1.27.0
 
+version: '3'
+
+services:
+  api:
+    image: bitbetter/api:latest
+    container_name: bitwarden-api
+    restart: always
+    volumes:
+      - ../core:/etc/bitwarden/core
+      - ../ca-certificates:/etc/bitwarden/ca-certificates
+      - ../logs/api:/etc/bitwarden/logs
+    env_file:
+      - global.env
+      - ../env/uid.env
+      - ../env/global.override.env
+```
+
+As `bitbetter/api` only exists localy, you have to update the script `<bitwarden home>/bwdata/scripts/run.sh`:
+Add `--ignore-pull-failures` to the commands in the `dockerComposePull` function:
+```bash
+function dockerComposePull() {
+    if [ -f "${DOCKER_DIR}/docker-compose.override.yml" ]
+    then
+        docker-compose -f $DOCKER_DIR/docker-compose.yml -f $DOCKER_DIR/docker-compose.override.yml pull --ignore-pull-failures
+    else
+        docker-compose -f $DOCKER_DIR/docker-compose.yml pull --ignore-pull-failures
+    fi
+}
+```
+
+### Restart Bitwarden
+Now restart Bitwarden using `bitwarden.sh restart`. Everything should work as usual.
+
+
+## Signing new licenses
+
+Run the licensing tool:
 ```bash
 ./src/LicenseGen/run.sh <PATH TO YOUR PFX>
 ```
-
-# Questions (you might have?)
-
-## But why? Its open source?
-
-Yes, bitwarden is great. If I didn't care about it i wouldn't be doing this.
-I was bothered that if i want to host bitwarden myself, at my house, 
-for my family to use (with the ability to share access) I would still have to pay a monthly ENTERPRISE organization fee.
-To host it myself. And maintain it myself. Basically WTH was bitwarden doing that I was paying them for?
-
-## You should have reached out to bitwarden
-
-Thanks, good idea. And I did. Currently they're not focused on solving this issue - yet. 
-To be clear i'm totally happy to give them my money. Offer a perpetual family license, and i'd pay for it. 
-Offer me a license thats tied to a version, I'll gladly rebuy another when a new version comes out AND i'm ready to upgrade.
-
-I provided all these suggestions to bitwarden and they told me to wait until next year. Until then there's this.
+### Generate a new user license:
+```bash
+./src/LicenseGen/run.sh /home/bitwarden/BitBetter/.keys/cert.pfx user "User Name" "email@test.de" "GUID"
+```
