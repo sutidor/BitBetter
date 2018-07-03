@@ -1,8 +1,8 @@
 # BitBetter
-[![CircleCI](https://img.shields.io/circleci/project/github/jakeswenson/BitBetter.svg)](https://circleci.com/gh/jakeswenson/BitBetter/tree/master)
 
 This project is a tool to modify bitwardens core dll to allow me to self license.
 Beware this does janky IL magic to rewrite the bitwarden core dll and install my self signed certificate.
+Make sure to create a backup before using this tool!
 
 ## Step by step instructions
 
@@ -95,5 +95,21 @@ Run the licensing tool:
 ```
 ### Generate a new user license:
 ```bash
-./src/LicenseGen/run.sh /home/bitwarden/BitBetter/.keys/cert.pfx user "User Name" "email@test.de" "GUID"
+./src/LicenseGen/run.sh /home/bitwarden/BitBetter/.keys/cert.pfx user "User Name" "email@test.de" "USER-GUID"
 ```
+
+### Generate a new organisation license:
+```bash
+./src/LicenseGen/run.sh /home/bitwarden/BitBetter/.keys/cert.pfx org "Shared Vault" "billing@test.de" "INSTALL-GUID"
+```
+
+# Questions (you might have?)
+
+## But why? Its open source?
+
+Yes, bitwarden is great.
+I was bothered that if i want to host bitwarden myself, at my house, 
+for my family to use (with the ability to share access) I would still have to pay a monthly ENTERPRISE organization fee.
+
+Until Bitwarden offers a better license (family, 4 members for example) for account sharing that allows self hosted installations, I will have to use this tool.
+
