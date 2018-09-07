@@ -74,12 +74,8 @@ As `bitbetter/api` only exists localy, you have to update the script `<bitwarden
 Add `--ignore-pull-failures` to the commands in the `dockerComposePull` function:
 ```bash
 function dockerComposePull() {
-    if [ -f "${DOCKER_DIR}/docker-compose.override.yml" ]
-    then
-        docker-compose -f $DOCKER_DIR/docker-compose.yml -f $DOCKER_DIR/docker-compose.override.yml pull --ignore-pull-failures
-    else
-        docker-compose -f $DOCKER_DIR/docker-compose.yml pull --ignore-pull-failures
-    fi
+    dockerComposeFiles
+    docker-compose pull --ignore-pull-failures
 }
 ```
 
@@ -102,6 +98,50 @@ Run the licensing tool:
 ```bash
 ./src/LicenseGen/run.sh /home/bitwarden/BitBetter/.keys/cert.pfx org "Shared Vault" "billing@test.de" "INSTALL-GUID"
 ```
+
+## Updating Bitwarden
+Here is a step by step guide to update bitwarden and bitbetter:
+
+Run the updateself and update command:
+```bash
+./bitwarden.sh updateself
+sudo ./bitwarden.sh update
+```
+The update script will fail.
+
+Now edit the `<bitwarden home>/bitwarden.sh` file and disable re-downloading of the run file (comment out *downloadRunFile*):
+```bash
+...
+elif [ "$1" == "update" ]
+then
+    checkOutputDirExists
+    #downloadRunFile
+    $SCRIPTS_DIR/run.sh update $OUTPUT $COREVERSION $WEBVERSION
+...
+```
+
+Now add `--ignore-pull-failures` to the commands in the `dockerComposePull` function of the run file (same procedure as for the initial installation) `<bitwarden home>/bwdata/scripts/run.sh`:
+```bash
+function dockerComposePull() {
+    dockerComposeFiles
+    docker-compose pull --ignore-pull-failures
+}
+```
+
+Now run the update script again:
+```bash
+sudo ./bitwarden.sh update
+```
+This time it should finish sucessfully.
+Next you have to rebuild bitbetter/api:
+
+First stop bitwarden:
+```bash
+sudo ./bitwarden.sh stop
+```
+Then run the steps from the *Building* section of this README.
+
+As a last step, remove the comment in front of *downloadRunFile* in the `<bitwarden home>/bitwarden.sh` again.
 
 # Questions (you might have?)
 
