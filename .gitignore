@@ -5,5 +5,5 @@ obj/
 *.pem
 .vscode/
 *.pfx
-.keys/
+.directory
 src/bitBetter/.keys/
