@@ -6,8 +6,16 @@ Make sure to create a backup before using this tool!
 
 ## Step by step instructions
 
-### Preperations for local building (without docker build environment)
+### Preperations for local building
+Install docker and dotnet-sdk:
 https://www.microsoft.com/net/download/linux-package-manager/ubuntu16-04/sdk-current
+
+After installing docker, make sure that the service is started and your current user is in the docker group:
+```bash
+sudo systemctl start docker
+sudo usermod -a -G docker $USER
+```
+
 ```bash
 cd <location of BitBetter>
 ```
@@ -42,6 +50,19 @@ cd ..
 
 ### Deploying newly build Docker Image
 The build process creates a local docker image called `bitbetter/api` which replaces `bitwarden/api`.
+
+If you have build the image on another pc, use the following commands to export the docker image and import it 
+to your target machine:
+
+```bash
+# on the build machine
+docker image save bitbetter/api > /tmp/bitbetter-api.tar
+
+# on the target machine
+docker load -i /tmp/bitbetter-api.tar
+# optional, delete old bitbetter image
+docker image rm <OLD IMAGE ID>
+```
 
 To replace the image copy the file `<bitwarden home>/bwdata/docker/docker-compose.yml` to `<bitwarden home>/bwdata/docker/docker-compose.override.yml`.
 Change the contents of the override file to the following:
@@ -87,16 +108,16 @@ Now restart Bitwarden using `bitwarden.sh restart`. Everything should work as us
 
 Run the licensing tool:
 ```bash
-./src/LicenseGen/run.sh <PATH TO YOUR PFX>
+./src/licenseGen/run.sh <PATH TO YOUR PFX>
 ```
 ### Generate a new user license:
 ```bash
-./src/LicenseGen/run.sh /home/bitwarden/BitBetter/.keys/cert.pfx user "User Name" "email@test.de" "USER-GUID"
+./src/licenseGen/run.sh /home/bitwarden/BitBetter/.keys/cert.pfx user "User Name" "email@test.de" "USER-GUID"
 ```
 
 ### Generate a new organisation license:
 ```bash
-./src/LicenseGen/run.sh /home/bitwarden/BitBetter/.keys/cert.pfx org "Shared Vault" "billing@test.de" "INSTALL-GUID"
+./src/licenseGen/run.sh /home/bitwarden/BitBetter/.keys/cert.pfx org "Shared Vault" "billing@test.de" "INSTALL-GUID"
 ```
 
 ## Updating Bitwarden
