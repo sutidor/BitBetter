@@ -2,7 +2,4 @@
 bin/
 obj/
 *.dll
-*.pem
 .vscode/
-*.pfx
-*.cert

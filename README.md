@@ -1,3 +1,5 @@
+<a href="https://github.com/alexyao2015/BitBetter/actions"><img alt="GitHub Actions Build" src="https://github.com/alexyao2015/BitBetter/workflows/BitBetter%20Image/badge.svg"></a>
+<a href="https://hub.docker.com/r/yaoa/bitbetter"><img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/yaoa/bitbetter.svg"></a>
 # BitBetter
 
 BitBetter is is a tool to modify Bitwarden's core dll to allow you to generate your own individual and organisation licenses. **You must have an existing installation of Bitwarden for BitBetter to modify.**
@@ -12,6 +14,7 @@ Credit to https://github.com/h44z/BitBetter and https://github.com/jakeswenson/B
 1. [Getting Started](#getting-started)
     + [Dependencies](#dependencies)
     + [Setting up BitBetter](#setting-up-bitbetter)
+    + [Using Public Images](#using-public-images)
     + [Building BitBetter](#building-bitbetter)
     + [Updating Bitwarden and BitBetter](#updating-bitwarden-and-bitbetter)
     + [Generating Signed Licenses](#generating-signed-licenses)
@@ -33,6 +36,26 @@ With your dependencies installed, begin the installation of BitBetter by downloa
 ```bash
 git clone https://github.com/jakeswenson/BitBetter.git
 ```
+
+## Using Public Images
+First patch the Bitwarden Script to use BitBetter Images:
+
+```bash
+curl -o patch-bitwarden.sh https://raw.githubusercontent.com/alexyao2015/BitBetter/public/patch-bitwarden.sh && chmod 755 patch-bitwarden.sh && ./patch-bitwarden.sh
+```
+
+Restart Bitwarden:
+
+```bash
+./bitwarden.sh restart
+```
+
+Generate a License:
+
+```bash
+docker run -it --rm yaoa/bitbetter:licensegen-latest
+```
+
 
 ## Building BitBetter
 

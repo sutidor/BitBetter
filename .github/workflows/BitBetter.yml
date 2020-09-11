@@ -1,0 +1,159 @@
+name: BitBetter Image
+
+on:
+  push:
+  schedule:
+    - cron:  '0 0 * * *'
+jobs:
+  regenerate_cert:
+    runs-on: ubuntu-latest
+    name: Regenerate Certificate
+    outputs:
+      regenerate: ${{ steps.check_regenerate.outputs.regenerate }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: 'public'
+      - name: Check if Regeneration Requested
+        id: check_regenerate
+        run: |
+          export REGENERATE="$(cat regenerate_cert.txt)"
+          echo "##[set-output name=regenerate;]$REGENERATE"
+      - name: Regenerate Certificate
+        id: regenerate
+        if: ${{ steps.check_regenerate.outputs.regenerate == 'true' }}
+        run: |
+          rm publicKeys/*.cert publicKeys/*.pem publicKeys/*.pfx regenerate_cert.txt || true
+          docker build -f ./publicKeys/Dockerfile -t bitbetter/certificate-gen .
+          docker run --rm -v $PWD/publicKeys:/certs bitbetter/certificate-gen
+          echo false > regenerate_cert.txt
+          ls -l
+          cat regenerate_cert.txt
+      - name: Commit New Certificate
+        if: ${{ steps.check_regenerate.outputs.regenerate == 'true' }}
+        uses: EndBug/add-and-commit@v4
+        with:
+          message: "Regenerate Certificate"
+          add: "publicKeys/*.cert publicKeys/*.pem publicKeys/*.pfx regenerate_cert.txt"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  check_version:
+    runs-on: ubuntu-latest
+    name: Check Last Built
+    outputs:
+      buildimage: ${{ steps.get_version.outputs.buildimage }}
+      buildversion: ${{ steps.get_version.outputs.buildversion }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: 'public'
+      - name: Get Latest Version
+        id: get_version
+        run: |
+          export BW_VERSION_LATEST="$(curl --silent https://raw.githubusercontent.com/bitwarden/server/master/scripts/bitwarden.sh | grep 'COREVERSION="' | sed 's/^[^"]*"//; s/".*//')"
+          export BW_VERSION_LAST_BUILT="$(cat bw_version.txt)"
+          if [ $BW_VERSION_LATEST == $BW_VERSION_LAST_BUILT ]; then
+            export NEED_BUILD=false
+          else
+            export NEED_BUILD=true
+          fi
+          echo "##[set-output name=buildimage;]$NEED_BUILD"
+          echo "##[set-output name=buildversion;]$BW_VERSION_LATEST"
+
+  build_bitbetter:
+    runs-on: ubuntu-latest
+    name: Publish BitBetter
+    needs: [check_version, regenerate_cert]
+    if: ${{ needs.check_version.outputs.buildimage == 'true' || needs.regenerate_cert.outputs.regenerate == 'true' }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: 'public'
+      - name: Set Repo
+        id: set_repo
+        run: |
+          export REPOSITORY=yaoa
+          echo "##[set-output name=repo;]$REPOSITORY"
+      - name: Build Image
+        id: build_image
+        env:
+          REPO: ${{ steps.set_repo.outputs.repo }}
+        run: |
+          docker build -f ./src/bitBetter/Dockerfile --build-arg BITWARDEN_TAG=bitwarden/api:${{ needs.check_version.outputs.buildversion }} -t ${REPO}/bitbetter:api .
+          docker build -f ./src/bitBetter/Dockerfile --build-arg BITWARDEN_TAG=bitwarden/identity:${{ needs.check_version.outputs.buildversion }} -t ${REPO}/bitbetter:identity .
+      - name: Login
+        run: |
+          docker login -u ${{ secrets.dockerID }} -p ${{ secrets.dockerPassword }}
+      - name: Deploy Run Number
+        env:
+          REPO: ${{ steps.set_repo.outputs.repo }}
+        run: |
+          docker tag ${REPO}/bitbetter:api ${REPO}/bitbetter:api-$GITHUB_RUN_NUMBER
+          docker tag ${REPO}/bitbetter:identity ${REPO}/bitbetter:identity-$GITHUB_RUN_NUMBER
+          docker push ${REPO}/bitbetter:api-$GITHUB_RUN_NUMBER
+          docker push ${REPO}/bitbetter:identity-$GITHUB_RUN_NUMBER
+      - name: Deploy Latest
+        env:
+          REPO: ${{ steps.set_repo.outputs.repo }}
+        run: |
+          docker tag ${REPO}/bitbetter:api ${REPO}/bitbetter:api-latest
+          docker tag ${REPO}/bitbetter:identity ${REPO}/bitbetter:identity-latest
+          docker push ${REPO}/bitbetter:api-latest
+          docker push ${REPO}/bitbetter:identity-latest
+      - name: Deploy Tag
+        env:
+          REPO: ${{ steps.set_repo.outputs.repo }}
+          VERSION: ${{ needs.check_version.outputs.buildversion }}
+        run: |
+          docker tag ${REPO}/bitbetter:api ${REPO}/bitbetter:api-${VERSION}
+          docker tag ${REPO}/bitbetter:identity ${REPO}/bitbetter:identity-${VERSION}
+          docker push ${REPO}/bitbetter:api-${VERSION}
+          docker push ${REPO}/bitbetter:identity-${VERSION}
+      - name: Save Version Number
+        env:
+          VERSION: ${{ needs.check_version.outputs.buildversion }}
+        run: |
+          echo ${VERSION} > bw_version.txt
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v4
+        with:
+          message: "Bitwarden Version Update"
+          add: "bw_version.txt"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build_generator:
+    runs-on: ubuntu-latest
+    name: Publish Generator
+    needs: build_bitbetter
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: 'public'
+      - name: Set Repo
+        id: set_repo
+        run: |
+          export REPOSITORY=yaoa
+          echo "##[set-output name=repo;]$REPOSITORY"
+      - name: Build Image
+        id: build_image
+        env:
+          REPO: ${{ steps.set_repo.outputs.repo }}
+        run: |
+          docker build -f ./src/licenseGen/Dockerfile -t ${REPO}/bitbetter:licensegen .
+      - name: Login
+        run: |
+          docker login -u ${{ secrets.dockerID }} -p ${{ secrets.dockerPassword }}
+      - name: Deploy Run Number
+        env:
+          REPO: ${{ steps.set_repo.outputs.repo }}
+        run: |
+          docker tag ${REPO}/bitbetter:licensegen ${REPO}/bitbetter:licensegen-$GITHUB_RUN_NUMBER
+          docker push ${REPO}/bitbetter:licensegen-$GITHUB_RUN_NUMBER
+      - name: Deploy Latest
+        env:
+          REPO: ${{ steps.set_repo.outputs.repo }}
+        run: |
+          docker tag ${REPO}/bitbetter:licensegen ${REPO}/bitbetter:licensegen-latest
+          docker push ${REPO}/bitbetter:licensegen-latest
