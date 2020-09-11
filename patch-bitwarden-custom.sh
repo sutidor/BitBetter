@@ -16,6 +16,28 @@ BITWARDEN_BASE=${tmpbase:-$BITWARDEN_BASE}
 [ -d "$BITWARDEN_BASE" ] || { echo "Bitwarden base directory $BITWARDEN_BASE not found!"; exit 1; }
 [ -f "$BITWARDEN_BASE/bitwarden.sh" ] || { echo "Bitwarden base directory $BITWARDEN_BASE is not valid!"; exit 1; }
 
+
+# Check if BitBetter directory exists; if exists ask to regenerate, if not generate
+if [ ! -d "$BITWARDEN_BASE/BitBetter" ]; then
+    docker pull yaoa/bitbetter:certificate-gen-latest
+    docker run --rm -v $BITWARDEN_BASE/bwdata/bitbetter:/certs yaoa/bitbetter:certificate-gen-latest
+    echo "Certificates generated!"
+else
+    # Check if user wants to regenerate certificates
+    REGEN_CERT="n"
+    read -p "Regenerate certificates? [y/N]: " tmprecreate
+    REGEN_CERT=${tmprecreate:-$REGEN_CERT}
+
+    if [[ $REGEN_CERT =~ ^[Yy]$ ]]
+    then
+        docker pull yaoa/bitbetter:certificate-gen-latest
+        docker run --rm -v $BITWARDEN_BASE/bwdata/bitbetter:/certs yaoa/bitbetter:certificate-gen-latest
+    else
+        echo "Not creating new certificates!"
+    fi
+fi;
+
+
 # Check if user wants to recreate the docker-compose override file
 RECREATE_OV="y"
 read -p "Rebuild docker-compose override? [Y/n]: " tmprecreate
@@ -28,10 +50,14 @@ then
         echo ""
         echo "services:"
         echo "  api:"
-        echo "    image: yaoa/bitbetter:api-$BW_VERSION"
+        echo "    image: yaoa/bitbetter:api-custom-$BW_VERSION"
+        echo "    volumes:"
+        echo "      - ../bitbetter/cert.cert:/newLicensing.cer"
         echo ""
         echo "  identity:"
-        echo "    image: yaoa/bitbetter:identity-$BW_VERSION"
+        echo "    image: yaoa/bitbetter:identity-custom-$BW_VERSION"
+        echo "    volumes:"
+        echo "      - ../bitbetter/cert.cert:/newLicensing.cer"
         echo ""
     } > $BITWARDEN_BASE/bwdata/docker/docker-compose.override.yml
     echo "BitBetter docker-compose override created!"
@@ -43,11 +69,6 @@ fi
 cd $BITWARDEN_BASE
 
 ./bitwarden.sh updateself
-
-# Update the bitwarden.sh: automatically patch run.sh to fix docker-compose pull errors for private images
-awk '1;/function downloadRunFile/{c=6}c&&!--c{print "sed -i '\''s/docker-compose pull/docker-compose pull/g'\'' $SCRIPTS_DIR/run.sh"}' $BITWARDEN_BASE/bitwarden.sh > tmp_bw.sh && mv tmp_bw.sh $BITWARDEN_BASE/bitwarden.sh
-chmod +x $BITWARDEN_BASE/bitwarden.sh
-echo "Patching bitwarden.sh completed..."
 
 ./bitwarden.sh update
 

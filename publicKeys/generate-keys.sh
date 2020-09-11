@@ -1,10 +1,8 @@
 #!/bin/sh
 
-# Check for openssl
-command -v openssl >/dev/null 2>&1 || { echo >&2 "openssl required but not found.  Aborting."; exit 1; }
+DIR="/certs"
 
-DIR=`dirname "$0"`
-DIR=`exec 2>/dev/null;(cd -- "$DIR") && cd -- "$DIR"|| cd "$DIR"; unset PWD; /usr/bin/pwd || /bin/pwd || pwd`
+rm $DIR/*.cert $DIR/*.pem $DIR/*.pfx
 
 # Remove any existing key files
 [ ! -e "$DIR/cert.pem" ]  || rm "$DIR/cert.pem"
@@ -17,4 +15,4 @@ openssl	req -x509 -newkey rsa:4096 -keyout "$DIR/key.pem" -out "$DIR/cert.cert" 
 openssl x509 -inform DER -in "$DIR/cert.cert" -out "$DIR/cert.pem"
 openssl pkcs12 -export -out "$DIR/cert.pfx" -inkey "$DIR/key.pem" -in "$DIR/cert.pem" -passin pass:test -passout pass:test
 
-chmod 644 *.cert *.pem *.pfx
+chmod 644 $DIR/*.cert $DIR/*.pem $DIR/*.pfx

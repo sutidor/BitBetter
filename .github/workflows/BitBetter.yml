@@ -23,12 +23,9 @@ jobs:
         id: regenerate
         if: ${{ steps.check_regenerate.outputs.regenerate == 'true' }}
         run: |
-          rm publicKeys/*.cert publicKeys/*.pem publicKeys/*.pfx regenerate_cert.txt || true
           docker build -f ./publicKeys/Dockerfile -t bitbetter/certificate-gen .
           docker run --rm -v $PWD/publicKeys:/certs bitbetter/certificate-gen
           echo false > regenerate_cert.txt
-          ls -l
-          cat regenerate_cert.txt
       - name: Commit New Certificate
         if: ${{ steps.check_regenerate.outputs.regenerate == 'true' }}
         uses: EndBug/add-and-commit@v4
@@ -40,7 +37,7 @@ jobs:
 
   check_version:
     runs-on: ubuntu-latest
-    name: Check Last Built
+    name: Check Last Built Version
     outputs:
       buildimage: ${{ steps.get_version.outputs.buildimage }}
       buildversion: ${{ steps.get_version.outputs.buildversion }}
@@ -65,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Publish BitBetter
     needs: [check_version, regenerate_cert]
-    if: ${{ needs.check_version.outputs.buildimage == 'true' || needs.regenerate_cert.outputs.regenerate == 'true' }}
+    if: ${{ needs.check_version.outputs.buildimage == 'true' || needs.regenerate_cert.outputs.regenerate == 'true' || github.event_name == 'push' }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -125,7 +122,7 @@ jobs:
 
   build_generator:
     runs-on: ubuntu-latest
-    name: Publish Generator
+    name: Publish License Generator
     needs: build_bitbetter
     steps:
       - uses: actions/checkout@v2

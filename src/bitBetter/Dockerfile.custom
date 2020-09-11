@@ -14,10 +14,7 @@ RUN set -e; set -x; \
 FROM ${BITWARDEN_TAG}
 
 COPY --from=build /bitBetter/bin/Debug/netcoreapp3.1/publish/* /bitBetter/
-COPY ./publicKeys/cert.cert /newLicensing.cer
+COPY ./src/bitBetter/bitbetter-entrypoint.sh /
+RUN chmod +x /bitbetter-entrypoint.sh
 
-RUN set -e; set -x; \
-    dotnet /bitBetter/bitBetter.dll && \
-    mv /app/Core.dll /app/Core.orig.dll && \
-    mv /app/modified.dll /app/Core.dll && \
-    rm -rf /bitBetter && rm -rf /newLicensing.cer
+ENTRYPOINT [ "/bitbetter-entrypoint.sh" ]
