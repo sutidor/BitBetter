@@ -18,7 +18,7 @@ BITWARDEN_BASE=${tmpbase:-$BITWARDEN_BASE}
 
 
 # Check if BitBetter directory exists; if exists ask to regenerate, if not generate
-if [ ! -d "$BITWARDEN_BASE/BitBetter" ]; then
+if [ ! -d "$BITWARDEN_BASE/bwdata/bitbetter" ]; then
     docker pull yaoa/bitbetter:certificate-gen-latest
     docker run --rm -v $BITWARDEN_BASE/bwdata/bitbetter:/certs yaoa/bitbetter:certificate-gen-latest
     echo "Certificates generated!"
