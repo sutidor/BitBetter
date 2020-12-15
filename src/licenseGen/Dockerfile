@@ -1,3 +1,5 @@
+ARG BITWARDEN_TAG
+
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1 as build
 
 WORKDIR /licenseGen
@@ -10,7 +12,7 @@ RUN set -e; set -x; \
 	&& dotnet publish
 
 
-FROM yaoa/bitbetter:api-latest
+FROM ${BITWARDEN_TAG}
 
 COPY --from=build /licenseGen/bin/Debug/netcoreapp3.1/publish/* /app/
 COPY ./publicKeys/cert.pfx /cert.pfx

@@ -31,7 +31,7 @@ jobs:
       - name: Set Repo
         id: set_repo
         run: |
-          export REPOSITORY=yaoa
+          export REPOSITORY=yaoa/bitbetter
           echo "##[set-output name=dockerrepo;]$REPOSITORY"
 
   build_bitbetter:
@@ -49,35 +49,35 @@ jobs:
       - name: Build Image
         id: build_image
         run: |
-          docker build -f ./src/bitBetter/Dockerfile.custom --build-arg BITWARDEN_TAG=bitwarden/api:${{ needs.check_version.outputs.buildversion }} -t ${REPO}/bitbetter:api .
-          docker build -f ./src/bitBetter/Dockerfile.custom --build-arg BITWARDEN_TAG=bitwarden/identity:${{ needs.check_version.outputs.buildversion }} -t ${REPO}/bitbetter:identity .
+          docker build -f ./src/bitBetter/Dockerfile.custom --build-arg BITWARDEN_TAG=bitwarden/api:${VERSION} -t bitbetter/ci:api .
+          docker build -f ./src/bitBetter/Dockerfile.custom --build-arg BITWARDEN_TAG=bitwarden/identity:${VERSION} -t bitbetter/ci:identity .
       - name: Login
         run: |
           docker login -u ${{ secrets.dockerID }} -p ${{ secrets.dockerPassword }}
       - name: Deploy Run Number
         run: |
-          docker tag ${REPO}/bitbetter:api ${REPO}/bitbetter:api-custom-$GITHUB_RUN_NUMBER
-          docker tag ${REPO}/bitbetter:identity ${REPO}/bitbetter:identity-custom-$GITHUB_RUN_NUMBER
-          docker push ${REPO}/bitbetter:api-custom-$GITHUB_RUN_NUMBER
-          docker push ${REPO}/bitbetter:identity-custom-$GITHUB_RUN_NUMBER
-          echo ${REPO}/bitbetter:api-custom-$GITHUB_RUN_NUMBER Deployed
-          echo ${REPO}/bitbetter:identity-custom-$GITHUB_RUN_NUMBER Deployed
+          docker tag bitbetter/ci:api ${REPO}:api-custom-$GITHUB_RUN_NUMBER
+          docker tag bitbetter/ci:identity ${REPO}:identity-custom-$GITHUB_RUN_NUMBER
+          docker push ${REPO}:api-custom-$GITHUB_RUN_NUMBER
+          docker push ${REPO}:identity-custom-$GITHUB_RUN_NUMBER
+          echo ${REPO}:api-custom-$GITHUB_RUN_NUMBER Deployed
+          echo ${REPO}:identity-custom-$GITHUB_RUN_NUMBER Deployed
       - name: Deploy Latest
         run: |
-          docker tag ${REPO}/bitbetter:api ${REPO}/bitbetter:api-custom-latest
-          docker tag ${REPO}/bitbetter:identity ${REPO}/bitbetter:identity-custom-latest
-          docker push ${REPO}/bitbetter:api-custom-latest
-          docker push ${REPO}/bitbetter:identity-custom-latest
-          echo ${REPO}/bitbetter:api-custom-latest Deployed
-          echo ${REPO}/bitbetter:identity-custom-latest Deployed
+          docker tag bitbetter/ci:api ${REPO}:api-custom-latest
+          docker tag bitbetter/ci:identity ${REPO}:identity-custom-latest
+          docker push ${REPO}:api-custom-latest
+          docker push ${REPO}:identity-custom-latest
+          echo ${REPO}:api-custom-latest Deployed
+          echo ${REPO}:identity-custom-latest Deployed
       - name: Deploy Tag
         run: |
-          docker tag ${REPO}/bitbetter:api ${REPO}/bitbetter:api-custom-${VERSION}
-          docker tag ${REPO}/bitbetter:identity ${REPO}/bitbetter:identity-custom-${VERSION}
-          docker push ${REPO}/bitbetter:api-custom-${VERSION}
-          docker push ${REPO}/bitbetter:identity-custom-${VERSION}
-          echo ${REPO}/bitbetter:api-custom-${VERSION} Deployed
-          echo ${REPO}/bitbetter:identity-custom-${VERSION} Deployed
+          docker tag bitbetter/ci:api ${REPO}:api-custom-${VERSION}
+          docker tag bitbetter/ci:identity ${REPO}:identity-custom-${VERSION}
+          docker push ${REPO}:api-custom-${VERSION}
+          docker push ${REPO}:identity-custom-${VERSION}
+          echo ${REPO}:api-custom-${VERSION} Deployed
+          echo ${REPO}:identity-custom-${VERSION} Deployed
       - name: Save Version Number
         run: |
           echo ${VERSION} > bw_version_custom.txt
@@ -95,6 +95,7 @@ jobs:
     needs: [check_version, build_bitbetter]
     env:
       REPO: ${{ needs.check_version.outputs.dockerrepo }}
+      VERSION: ${{ needs.check_version.outputs.buildversion }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -102,20 +103,25 @@ jobs:
       - name: Build Image
         id: build_image
         run: |
-          docker build -f ./src/licenseGen/Dockerfile.custom -t ${REPO}/bitbetter:licensegen .
+          docker build -f ./src/licenseGen/Dockerfile.custom --build-arg BITWARDEN_TAG=bitwarden/api:${VERSION} -t bitbetter/ci:licensegen .
       - name: Login
         run: |
           docker login -u ${{ secrets.dockerID }} -p ${{ secrets.dockerPassword }}
       - name: Deploy Run Number
         run: |
-          docker tag ${REPO}/bitbetter:licensegen ${REPO}/bitbetter:licensegen-custom-$GITHUB_RUN_NUMBER
-          docker push ${REPO}/bitbetter:licensegen-custom-$GITHUB_RUN_NUMBER
-          echo ${REPO}/bitbetter:licensegen-custom-$GITHUB_RUN_NUMBER Deployed
+          docker tag bitbetter/ci:licensegen ${REPO}:licensegen-custom-$GITHUB_RUN_NUMBER
+          docker push ${REPO}:licensegen-custom-$GITHUB_RUN_NUMBER
+          echo ${REPO}:licensegen-custom-$GITHUB_RUN_NUMBER Deployed
       - name: Deploy Latest
         run: |
-          docker tag ${REPO}/bitbetter:licensegen ${REPO}/bitbetter:licensegen-custom-latest
-          docker push ${REPO}/bitbetter:licensegen-custom-latest
-          echo ${REPO}/bitbetter:licensegen-custom-latest Deployed
+          docker tag bitbetter/ci:licensegen ${REPO}:licensegen-custom-latest
+          docker push ${REPO}:licensegen-custom-latest
+          echo ${REPO}:licensegen-custom-latest Deployed
+      - name: Deploy Tag
+        run: |
+          docker tag bitbetter/ci:licensegen ${REPO}:licensegen-custom-${VERSION}
+          docker push ${REPO}:licensegen-custom-${VERSION}
+          echo ${REPO}:licensegen-custom-${VERSION} Deployed
   
   build_cert_gen:
     runs-on: ubuntu-latest
@@ -130,17 +136,22 @@ jobs:
       - name: Build Image
         id: build_image
         run: |
-          docker build -f ./publicKeys/Dockerfile -t ${REPO}/bitbetter:certificate-gen .
+          docker build -f ./publicKeys/Dockerfile -t bitbetter/ci:certificate-gen .
       - name: Login
         run: |
           docker login -u ${{ secrets.dockerID }} -p ${{ secrets.dockerPassword }}
       - name: Deploy Run Number
         run: |
-          docker tag ${REPO}/bitbetter:certificate-gen ${REPO}/bitbetter:certificate-gen-$GITHUB_RUN_NUMBER
-          docker push ${REPO}/bitbetter:certificate-gen-$GITHUB_RUN_NUMBER
-          echo ${REPO}/bitbetter:certificate-gen-$GITHUB_RUN_NUMBER Deployed
+          docker tag bitbetter/ci:certificate-gen ${REPO}:certificate-gen-$GITHUB_RUN_NUMBER
+          docker push ${REPO}:certificate-gen-$GITHUB_RUN_NUMBER
+          echo ${REPO}:certificate-gen-$GITHUB_RUN_NUMBER Deployed
       - name: Deploy Latest
         run: |
-          docker tag ${REPO}/bitbetter:certificate-gen ${REPO}/bitbetter:certificate-gen-latest
-          docker push ${REPO}/bitbetter:certificate-gen-latest
-          echo ${REPO}/bitbetter:certificate-gen-latest Deployed
+          docker tag bitbetter/ci:certificate-gen ${REPO}:certificate-gen-latest
+          docker push ${REPO}:certificate-gen-latest
+          echo ${REPO}:certificate-gen-latest Deployed
+      - name: Deploy Tag
+        run: |
+          docker tag bitbetter/ci:certificate-gen ${REPO}:certificate-gen-${VERSION}
+          docker push ${REPO}:certificate-gen-${VERSION}
+          echo ${REPO}:certificate-gen-${VERSION} Deployed

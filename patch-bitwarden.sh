@@ -51,7 +51,5 @@ echo "Patching bitwarden.sh completed..."
 
 ./bitwarden.sh update
 
-./bitwarden.sh restart
-
 cd $SCRIPT_BASE
 echo "Bitwarden update completed!"

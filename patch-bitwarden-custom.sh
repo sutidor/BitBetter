@@ -19,8 +19,8 @@ BITWARDEN_BASE=${tmpbase:-$BITWARDEN_BASE}
 
 # Check if BitBetter directory exists; if exists ask to regenerate, if not generate
 if [ ! -d "$BITWARDEN_BASE/bwdata/bitbetter" ]; then
-    docker pull yaoa/bitbetter:certificate-gen-latest
-    docker run --rm -v $BITWARDEN_BASE/bwdata/bitbetter:/certs yaoa/bitbetter:certificate-gen-latest
+    echo "Generating new certificates..."
+    docker run --rm -v $BITWARDEN_BASE/bwdata/bitbetter:/certs yaoa/bitbetter:certificate-gen-${BW_VERSION}
     echo "Certificates generated!"
 else
     # Check if user wants to regenerate certificates
@@ -30,8 +30,7 @@ else
 
     if [[ $REGEN_CERT =~ ^[Yy]$ ]]
     then
-        docker pull yaoa/bitbetter:certificate-gen-latest
-        docker run --rm -v $BITWARDEN_BASE/bwdata/bitbetter:/certs yaoa/bitbetter:certificate-gen-latest
+        docker run --rm -v $BITWARDEN_BASE/bwdata/bitbetter:/certs yaoa/bitbetter:certificate-gen-${BW_VERSION}
     else
         echo "Not creating new certificates!"
     fi
@@ -71,8 +70,6 @@ cd $BITWARDEN_BASE
 ./bitwarden.sh updateself
 
 ./bitwarden.sh update
-
-./bitwarden.sh restart
 
 cd $SCRIPT_BASE
 echo "Bitwarden update completed!"

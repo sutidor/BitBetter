@@ -42,26 +42,38 @@ git clone https://github.com/jakeswenson/BitBetter.git
 First patch the Bitwarden script to use BitBetter Images:
 
 ```bash
-curl -o patch-bitwarden.sh https://raw.githubusercontent.com/alexyao2015/BitBetter/public/patch-bitwarden.sh && chmod 755 patch-bitwarden.sh && ./patch-bitwarden.sh
+sudo curl -o patch-bitwarden.sh https://raw.githubusercontent.com/alexyao2015/BitBetter/public/patch-bitwarden.sh && sudo chmod 755 patch-bitwarden.sh && sudo ./patch-bitwarden.sh
 ```
 
 Generate a License:
 
 ```bash
-docker run -it --rm yaoa/bitbetter:licensegen-latest
+sudo docker run -it --rm yaoa/bitbetter:licensegen-latest
+```
+
+Updating:
+
+```bash
+sudo ./patch-bitwarden.sh
 ```
 
 ## Using Public Images with Custom Certificate
 Patch the Bitwarden script to use BitBetter Images (Automatically generates certificates):
 
 ```bash
-curl -o patch-bitwarden-custom.sh https://raw.githubusercontent.com/alexyao2015/BitBetter/public/patch-bitwarden-custom.sh && chmod 755 patch-bitwarden-custom.sh && ./patch-bitwarden-custom.sh
+sudo curl -o patch-bitwarden-custom.sh https://raw.githubusercontent.com/alexyao2015/BitBetter/public/patch-bitwarden-custom.sh && sudo chmod 755 patch-bitwarden-custom.sh && sudo ./patch-bitwarden-custom.sh
 ```
 
 Generate Custom License:
 
 ```bash
-docker run -it --rm -v $PWD/bwdata/bitbetter/cert.pfx:/cert.pfx yaoa/bitbetter:licensegen-custom-latest
+sudo docker run -it --rm -v $PWD/bwdata/bitbetter/cert.pfx:/cert.pfx yaoa/bitbetter:licensegen-custom-latest
+```
+
+Updating:
+
+```bash
+sudo ./patch-bitwarden-custom.sh
 ```
 
 ## Building BitBetter
