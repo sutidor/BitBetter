@@ -1,20 +1,18 @@
 #!/bin/bash
 
+# Default path is the current directory of the BitBetter script
 SCRIPT_BASE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 BW_VERSION="$(curl --silent https://raw.githubusercontent.com/bitwarden/server/master/scripts/bitwarden.sh | grep 'COREVERSION="' | sed 's/^[^"]*"//; s/".*//')"
 
 echo "Starting Bitwarden update, newest server version: $BW_VERSION"
 
-# Default path is the parent directory of the BitBetter location
-BITWARDEN_BASE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-
 # Get Bitwarden base from user (or keep default value)
-read -p "Enter Bitwarden base directory [$BITWARDEN_BASE]: " tmpbase
-BITWARDEN_BASE=${tmpbase:-$BITWARDEN_BASE}
+read -p "Enter Bitwarden base directory [$SCRIPT_BASE]: " tmpbase
+SCRIPT_BASE=${tmpbase:-$SCRIPT_BASE}
 
 # Check if directory exists and is valid
-[ -d "$BITWARDEN_BASE" ] || { echo "Bitwarden base directory $BITWARDEN_BASE not found!"; exit 1; }
-[ -f "$BITWARDEN_BASE/bitwarden.sh" ] || { echo "Bitwarden base directory $BITWARDEN_BASE is not valid!"; exit 1; }
+[ -d "$SCRIPT_BASE" ] || { echo "Bitwarden base directory $SCRIPT_BASE not found!"; exit 1; }
+[ -f "$SCRIPT_BASE/bitwarden.sh" ] || { echo "Bitwarden base directory $SCRIPT_BASE is not valid!"; exit 1; }
 
 # Check if user wants to recreate the docker-compose override file
 RECREATE_OV="y"
@@ -33,21 +31,16 @@ then
         echo "  identity:"
         echo "    image: yaoa/bitbetter:identity-$BW_VERSION"
         echo ""
-    } > $BITWARDEN_BASE/bwdata/docker/docker-compose.override.yml
+    } > $SCRIPT_BASE/bwdata/docker/docker-compose.override.yml
     echo "BitBetter docker-compose override created!"
 else
-    echo "Make sure to check if the docker override contains the correct image version ($BW_VERSION) in $BITWARDEN_BASE/bwdata/docker/docker-compose.override.yml!"
+    echo "Make sure to check if the docker override contains the correct image version ($BW_VERSION) in $SCRIPT_BASE/bwdata/docker/docker-compose.override.yml!"
 fi
 
 # Now start the bitwarden update
-cd $BITWARDEN_BASE
+cd $SCRIPT_BASE
 
 ./bitwarden.sh updateself
-
-# Update the bitwarden.sh: automatically patch run.sh to fix docker-compose pull errors for private images
-awk '1;/function downloadRunFile/{c=6}c&&!--c{print "sed -i '\''s/docker-compose pull/docker-compose pull/g'\'' $SCRIPTS_DIR/run.sh"}' $BITWARDEN_BASE/bitwarden.sh > tmp_bw.sh && mv tmp_bw.sh $BITWARDEN_BASE/bitwarden.sh
-chmod +x $BITWARDEN_BASE/bitwarden.sh
-echo "Patching bitwarden.sh completed..."
 
 ./bitwarden.sh update
 

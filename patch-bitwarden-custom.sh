@@ -1,26 +1,24 @@
 #!/bin/bash
 
+# Default path is the current directory of the BitBetter script
 SCRIPT_BASE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 BW_VERSION="$(curl --silent https://raw.githubusercontent.com/bitwarden/server/master/scripts/bitwarden.sh | grep 'COREVERSION="' | sed 's/^[^"]*"//; s/".*//')"
 
 echo "Starting Bitwarden update, newest server version: $BW_VERSION"
 
-# Default path is the parent directory of the BitBetter location
-BITWARDEN_BASE="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-
 # Get Bitwarden base from user (or keep default value)
-read -p "Enter Bitwarden base directory [$BITWARDEN_BASE]: " tmpbase
-BITWARDEN_BASE=${tmpbase:-$BITWARDEN_BASE}
+read -p "Enter Bitwarden base directory [$SCRIPT_BASE]: " tmpbase
+SCRIPT_BASE=${tmpbase:-$SCRIPT_BASE}
 
 # Check if directory exists and is valid
-[ -d "$BITWARDEN_BASE" ] || { echo "Bitwarden base directory $BITWARDEN_BASE not found!"; exit 1; }
-[ -f "$BITWARDEN_BASE/bitwarden.sh" ] || { echo "Bitwarden base directory $BITWARDEN_BASE is not valid!"; exit 1; }
+[ -d "$SCRIPT_BASE" ] || { echo "Bitwarden base directory $SCRIPT_BASE not found!"; exit 1; }
+[ -f "$SCRIPT_BASE/bitwarden.sh" ] || { echo "Bitwarden base directory $SCRIPT_BASE is not valid!"; exit 1; }
 
 
 # Check if BitBetter directory exists; if exists ask to regenerate, if not generate
-if [ ! -d "$BITWARDEN_BASE/bwdata/bitbetter" ]; then
+if [ ! -d "$SCRIPT_BASE/bwdata/bitbetter" ]; then
     echo "Generating new certificates..."
-    docker run --rm -v $BITWARDEN_BASE/bwdata/bitbetter:/certs yaoa/bitbetter:certificate-gen-${BW_VERSION}
+    docker run --rm -v $SCRIPT_BASE/bwdata/bitbetter:/certs yaoa/bitbetter:certificate-gen-${BW_VERSION}
     echo "Certificates generated!"
 else
     # Check if user wants to regenerate certificates
@@ -30,7 +28,7 @@ else
 
     if [[ $REGEN_CERT =~ ^[Yy]$ ]]
     then
-        docker run --rm -v $BITWARDEN_BASE/bwdata/bitbetter:/certs yaoa/bitbetter:certificate-gen-${BW_VERSION}
+        docker run --rm -v $SCRIPT_BASE/bwdata/bitbetter:/certs yaoa/bitbetter:certificate-gen-${BW_VERSION}
     else
         echo "Not creating new certificates!"
     fi
@@ -58,14 +56,14 @@ then
         echo "    volumes:"
         echo "      - ../bitbetter/cert.cert:/newLicensing.cer"
         echo ""
-    } > $BITWARDEN_BASE/bwdata/docker/docker-compose.override.yml
+    } > $SCRIPT_BASE/bwdata/docker/docker-compose.override.yml
     echo "BitBetter docker-compose override created!"
 else
-    echo "Make sure to check if the docker override contains the correct image version ($BW_VERSION) in $BITWARDEN_BASE/bwdata/docker/docker-compose.override.yml!"
+    echo "Make sure to check if the docker override contains the correct image version ($BW_VERSION) in $SCRIPT_BASE/bwdata/docker/docker-compose.override.yml!"
 fi
 
 # Now start the bitwarden update
-cd $BITWARDEN_BASE
+cd $SCRIPT_BASE
 
 ./bitwarden.sh updateself
 
