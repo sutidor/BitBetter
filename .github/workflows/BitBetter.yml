@@ -122,7 +122,8 @@ jobs:
   build_generator:
     runs-on: ubuntu-latest
     name: Publish License Generator
-    needs: build_bitbetter
+    needs: [check_version, regenerate_cert]
+    if: ${{ needs.check_version.outputs.buildimage == 'true' || needs.regenerate_cert.outputs.regenerate == 'true' || github.event_name == 'push' }}
     env:
       REPO: ${{ needs.check_version.outputs.dockerrepo }}
       VERSION: ${{ needs.check_version.outputs.buildversion }}

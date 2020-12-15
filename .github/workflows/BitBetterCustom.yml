@@ -92,7 +92,8 @@ jobs:
   build_lic_generator:
     runs-on: ubuntu-latest
     name: Publish License Generator
-    needs: [check_version, build_bitbetter]
+    needs: check_version
+    if: ${{ needs.check_version.outputs.buildimage == 'true' || github.event_name == 'push' }}
     env:
       REPO: ${{ needs.check_version.outputs.dockerrepo }}
       VERSION: ${{ needs.check_version.outputs.buildversion }}
@@ -126,9 +127,11 @@ jobs:
   build_cert_gen:
     runs-on: ubuntu-latest
     name: Publish Certificate Generator
-    needs: [check_version, build_bitbetter]
+    needs: check_version
+    if: ${{ needs.check_version.outputs.buildimage == 'true' || github.event_name == 'push' }}
     env:
       REPO: ${{ needs.check_version.outputs.dockerrepo }}
+      VERSION: ${{ needs.check_version.outputs.buildversion }}
     steps:
       - uses: actions/checkout@v2
         with:
