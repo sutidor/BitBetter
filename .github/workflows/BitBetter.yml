@@ -70,14 +70,10 @@ jobs:
         registry:
           - {
               url: registry.hub.docker.com,
-              username: ${{ secrets.dockerID }},
-              password: ${{ secrets.dockerPassword }},
               repo: yaoa/bitbetter
             }
           - {
               url: ghcr.io/alexyao2015,
-              username: ${{ secrets.CR_USER }},
-              password: ${{ secrets.CR_PAT }},
               repo: ghcr.io/alexyao2015/bitbetter
             }
         base_image:
@@ -139,13 +135,14 @@ jobs:
         id: build_image
         run: |
           docker build -f ${SRC_LOCATION} --build-arg ${BUILD_ARG}:${VERSION} -t bitbetter/${IMAGE_NAME}:ci .
-      - name: Login
+      - name: Login to Docker Hub
+        if: matrix.registry.url == "registry.hub.docker.com"
         run: |
-          if [ ${{ matrix.registry }} == "registry.hub.docker.com" ]; then
-            docker login -u ${{ secrets.dockerID }} -p ${{ secrets.dockerPassword }}
-          else
-            echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry }} -u "${{ secrets.CR_USER }}" --password-stdin
-          fi
+          docker login -u ${{ secrets.dockerID }} -p ${{ secrets.dockerPassword }}
+      - name: Login to Github Container Registry
+        if: matrix.registry.url == "ghcr.io/alexyao2015"
+        run: |
+          echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry }} -u "${{ secrets.CR_USER }}" --password-stdin
       - name: Deploy Run Number
         run: |
           docker tag bitbetter/${IMAGE_NAME}:ci ${REPO}:${IMAGE_NAME}-$GITHUB_RUN_NUMBER
