@@ -60,60 +60,36 @@ jobs:
 
   build_bitbetter:
     runs-on: ubuntu-latest
-    name: Publish BitBetter
+    name: Build BitBetter
     needs: [check_version, regenerate_cert]
     if: ${{ needs.check_version.outputs.buildimage == 'true' || needs.regenerate_cert.outputs.regenerate == 'true' || github.event_name == 'push' }}
     env:
       VERSION: ${{ needs.check_version.outputs.buildversion }}
     strategy:
       matrix:
-        registry:
-          - {
-              url: registry.hub.docker.com,
-              repo: yaoa/bitbetter
-            }
-          - {
-              url: ghcr.io/alexyao2015,
-              repo: ghcr.io/alexyao2015/bitbetter
-            }
-        base_image:
-          - {
-              image_name: api,
-              src_location: ./src/bitBetter/Dockerfile,
-              build_arg: BITWARDEN_TAG=bitwarden/api
-            }
-          - {
-              image_name: identity,
-              src_location: ./src/bitBetter/Dockerfile,
-              build_arg: BITWARDEN_TAG=bitwarden/identity
-            }
-          - {
-              image_name: licensegen,
-              src_location: ./src/licenseGen/Dockerfile,
-              build_arg: BITWARDEN_TAG=bitwarden/api
-            }
+        include:
+          - image_name: api
+            src_location: ./src/bitBetter/Dockerfile
+            build_arg: BITWARDEN_TAG=bitwarden/api
+          - image_name: identity
+            src_location: ./src/bitBetter/Dockerfile
+            build_arg: BITWARDEN_TAG=bitwarden/identity
+          - image_name: licensegen
+            src_location: ./src/licenseGen/Dockerfile
+            build_arg: BITWARDEN_TAG=bitwarden/api
 
-
-          - {
-              image_name: api-custom,
-              src_location: ./src/bitBetter/Dockerfile.custom,
-              build_arg: BITWARDEN_TAG=bitwarden/api
-            }
-          - {
-              image_name: identity-custom,
-              src_location: ./src/bitBetter/Dockerfile.custom,
-              build_arg: BITWARDEN_TAG=bitwarden/identity
-            }
-          - {
-              image_name: licensegen-custom,
-              src_location: ./src/licenseGen/Dockerfile,
-              build_arg: BITWARDEN_TAG=bitwarden/api
-            }
-          - {
-              image_name: certificate-gen,
-              src_location: ./publicKeys/Dockerfile,
-              build_arg: BITWARDEN_TAG=bitwarden/api
-            }
+          - image_name: api-custom
+            src_location: ./src/bitBetter/Dockerfile.custom
+            build_arg: BITWARDEN_TAG=bitwarden/api
+          - image_name: identity-custom
+            src_location: ./src/bitBetter/Dockerfile.custom
+            build_arg: BITWARDEN_TAG=bitwarden/identity
+          - image_name: licensegen-custom
+            src_location: ./src/licenseGen/Dockerfile
+            build_arg: BITWARDEN_TAG=bitwarden/api
+          - image_name: certificate-gen
+            src_location: ./publicKeys/Dockerfile
+            build_arg: BITWARDEN_TAG=bitwarden/api
 
     steps:
       - uses: actions/checkout@v2
@@ -122,12 +98,10 @@ jobs:
       - name: Set Variables
         id: set_repo
         run: |
-          export REPO=${{ matrix.registry.repo }}
-          export SRC_LOCATION=${{ matrix.base_image.src_location }}
-          export BUILD_ARG=${{ matrix.base_image.build_arg }}
-          export IMAGE_NAME=${{ matrix.base_image.image_name }}
+          export SRC_LOCATION=${{ matrix.src_location }}
+          export BUILD_ARG=${{ matrix.build_arg }}
+          export IMAGE_NAME=${{ matrix.image_name }}
 
-          echo "REPO=${REPO}" >> $GITHUB_ENV
           echo "SRC_LOCATION=${SRC_LOCATION}" >> $GITHUB_ENV
           echo "BUILD_ARG=${BUILD_ARG}" >> $GITHUB_ENV
           echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_ENV
@@ -139,35 +113,81 @@ jobs:
       - name: Build Image
         id: build_image
         run: |
-          docker build -f ${SRC_LOCATION} --build-arg ${BUILD_ARG}:${VERSION} -t bitbetter/${IMAGE_NAME}:ci .
-      - name: Login to Docker Hub
-        if: ${{ matrix.registry.url == 'registry.hub.docker.com' }}
+          docker build -f ${SRC_LOCATION} --build-arg ${BUILD_ARG}:${VERSION} -t bitbetter/${IMAGE_NAME}:ci-$GITHUB_RUN_NUMBER .
+      - name: Save tarball
         run: |
-          docker login -u ${{ secrets.dockerID }} -p ${{ secrets.dockerPassword }}
-      - name: Login to Github Container Registry
-        if: ${{ matrix.registry.url == 'ghcr.io/alexyao2015' }}
+          docker save --output output.tar bitbetter/${IMAGE_NAME}:ci-$GITHUB_RUN_NUMBER
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ci-${IMAGE_NAME}-$GITHUB_RUN_NUMBER.tar
+          path: output.tar
+
+  publish_bitbetter:
+    runs-on: ubuntu-latest
+    name: Publish BitBetter
+    needs: [check_version, build_bitbetter]
+    env:
+      VERSION: ${{ needs.check_version.outputs.buildversion }}
+    strategy:
+      matrix:
+        registry:
+          - {
+              url: registry.hub.docker.com,
+              username: dockerID,
+              password: dockerPassword,
+              repo: yaoa/bitbetter
+            }
+          - {
+              url: ghcr.io/alexyao2015,
+              username: CR_USER,
+              password: CR_PAT,
+              repo: ghcr.io/alexyao2015/bitbetter
+            }
+        image_name: [api, identity, licensegen, api-custom, identity-custom, licensegen-custom, certificate-gen]
+
+    steps:
+      - name: Set Variables
+        id: set_repo
         run: |
-          echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry.url }} -u "${{ secrets.CR_USER }}" --password-stdin
+          export REPO=${{ matrix.registry.repo }}
+          export IMAGE_NAME=${{ matrix.image_name }}
+
+          echo "REPO=${REPO}" >> $GITHUB_ENV
+          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_ENV
+
+          echo Repository set as: ${REPO}
+          echo Image name set as: ${IMAGE_NAME}
+      - name: Download container artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: ci-${{ matrix.image_name }}-${{ github.run_number }}.tar
+      - name: Import image
+        run: |
+          docker load --input output.tar
+      - name: Login
+        run: |
+          docker login ${{ matrix.registry.url }} -u ${{ secrets[matrix.registry.username] }} -p ${{ secrets[matrix.registry.password] }}
       - name: Deploy Run Number
         run: |
-          docker tag bitbetter/${IMAGE_NAME}:ci ${REPO}:${IMAGE_NAME}-$GITHUB_RUN_NUMBER
+          docker tag bitbetter/${IMAGE_NAME}:ci-$GITHUB_RUN_NUMBER ${REPO}:${IMAGE_NAME}-$GITHUB_RUN_NUMBER
           docker push ${REPO}:${IMAGE_NAME}-$GITHUB_RUN_NUMBER
           echo ${REPO}:${IMAGE_NAME}-$GITHUB_RUN_NUMBER Deployed
       - name: Deploy Latest
         run: |
-          docker tag bitbetter/${IMAGE_NAME}:ci ${REPO}:${IMAGE_NAME}-latest
+          docker tag bitbetter/${IMAGE_NAME}:ci-$GITHUB_RUN_NUMBER ${REPO}:${IMAGE_NAME}-latest
           docker push ${REPO}:${IMAGE_NAME}-latest
           echo ${REPO}:${IMAGE_NAME}-latest Deployed
       - name: Deploy Tag
         run: |
-          docker tag bitbetter/${IMAGE_NAME}:ci ${REPO}:${IMAGE_NAME}-${VERSION}
+          docker tag bitbetter/${IMAGE_NAME}:ci-$GITHUB_RUN_NUMBER ${REPO}:${IMAGE_NAME}-${VERSION}
           docker push ${REPO}:${IMAGE_NAME}-${VERSION}
           echo ${REPO}:${IMAGE_NAME}-${VERSION} Deployed
-  
+
   commit_version:
     runs-on: ubuntu-latest
     name: Commit Build Version
-    needs: [check_version, build_bitbetter]
+    needs: [check_version, publish_bitbetter]
     env:
       VERSION: ${{ needs.check_version.outputs.buildversion }}
     steps:
