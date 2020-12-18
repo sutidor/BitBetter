@@ -177,13 +177,12 @@ jobs:
     env:
       VERSION: ${{ needs.check_version.outputs.buildversion }}
     steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: 'public'
       - name: Save Version Number
         run: |
           echo ${VERSION} > bw_version.txt
-      - name: Commit changes
-        uses: EndBug/add-and-commit@v4
-        with:
-          message: "Bitwarden Version Update"
-          add: "bw_version.txt"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git add .
+          git commit -m "Bitwarden Version Update"
+          git push
