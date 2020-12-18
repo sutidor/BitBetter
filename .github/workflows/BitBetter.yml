@@ -26,14 +26,11 @@ jobs:
           docker build -f ./publicKeys/Dockerfile -t bitbetter/certificate-gen .
           docker run --rm -v $PWD/publicKeys:/certs bitbetter/certificate-gen
           echo false > regenerate_cert.txt
-      - name: Commit New Certificate
-        if: ${{ steps.check_regenerate.outputs.regenerate == 'true' }}
-        uses: EndBug/add-and-commit@v4
-        with:
-          message: "Regenerate Certificate"
-          add: "publicKeys/cert.pem publicKeys/key.pem publicKeys/cert.cert publicKeys/cert.pfx regenerate_cert.txt"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git config user.name alexyao2015
+          git config user.email alexyao2015@github.com
+          git add .
+          git commit -m "Regenerate Certificate"
+          git push
 
   check_version:
     runs-on: ubuntu-latest
@@ -183,6 +180,8 @@ jobs:
       - name: Save Version Number
         run: |
           echo ${VERSION} > bw_version.txt
+          git config user.name alexyao2015
+          git config user.email alexyao2015@github.com
           git add .
           git commit -m "Bitwarden Version Update"
           git push
