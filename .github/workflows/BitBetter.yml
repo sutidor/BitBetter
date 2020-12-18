@@ -136,11 +136,11 @@ jobs:
         run: |
           docker build -f ${SRC_LOCATION} --build-arg ${BUILD_ARG}:${VERSION} -t bitbetter/${IMAGE_NAME}:ci .
       - name: Login to Docker Hub
-        if: matrix.registry.url == "registry.hub.docker.com"
+        if: ${{ matrix.registry.url == "registry.hub.docker.com" }}
         run: |
           docker login -u ${{ secrets.dockerID }} -p ${{ secrets.dockerPassword }}
       - name: Login to Github Container Registry
-        if: matrix.registry.url == "ghcr.io/alexyao2015"
+        if: ${{ matrix.registry.url == "ghcr.io/alexyao2015" }}
         run: |
           echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry }} -u "${{ secrets.CR_USER }}" --password-stdin
       - name: Deploy Run Number
