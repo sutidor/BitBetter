@@ -122,7 +122,7 @@ jobs:
       - name: Set Variables
         id: set_repo
         run: |
-          echo "REPO=${{ matrix.registry.repo}" >> $GITHUB_ENV
+          echo "REPO=${{ matrix.registry.repo }}" >> $GITHUB_ENV
           echo "SRC_LOCATION=${{ matrix.base_image.src_location }}" >> $GITHUB_ENV
           echo "BUILD_ARG=${{ matrix.base_image.build_arg }}" >> $GITHUB_ENV
           echo "IMAGE_NAME=${{ matrix.base_image.image_name }}" >> $GITHUB_ENV
