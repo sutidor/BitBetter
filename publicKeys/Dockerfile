@@ -1,3 +1,6 @@
+# Just here to please docker and allow for code reuse
+ARG BITWARDEN_TAG
+
 FROM alpine:latest
 
 RUN apk update && \
