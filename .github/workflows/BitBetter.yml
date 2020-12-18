@@ -147,7 +147,7 @@ jobs:
       - name: Login to Github Container Registry
         if: ${{ matrix.registry.url == 'ghcr.io/alexyao2015' }}
         run: |
-          echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry }} -u "${{ secrets.CR_USER }}" --password-stdin
+          echo "${{ secrets.CR_PAT }}" | docker login ${{ matrix.registry.url }} -u "${{ secrets.CR_USER }}" --password-stdin
       - name: Deploy Run Number
         run: |
           docker tag bitbetter/${IMAGE_NAME}:ci ${REPO}:${IMAGE_NAME}-$GITHUB_RUN_NUMBER
