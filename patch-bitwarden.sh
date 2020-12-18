@@ -26,10 +26,10 @@ then
         echo ""
         echo "services:"
         echo "  api:"
-        echo "    image: yaoa/bitbetter:api-$BW_VERSION"
+        echo "    image: ghcr.io/alexyao2015/bitbetter:api-$BW_VERSION"
         echo ""
         echo "  identity:"
-        echo "    image: yaoa/bitbetter:identity-$BW_VERSION"
+        echo "    image: ghcr.io/alexyao2015/bitbetter:identity-$BW_VERSION"
         echo ""
     } > $SCRIPT_BASE/bwdata/docker/docker-compose.override.yml
     echo "BitBetter docker-compose override created!"

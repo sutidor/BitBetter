@@ -18,7 +18,7 @@ SCRIPT_BASE=${tmpbase:-$SCRIPT_BASE}
 # Check if BitBetter directory exists; if exists ask to regenerate, if not generate
 if [ ! -d "$SCRIPT_BASE/bwdata/bitbetter" ]; then
     echo "Generating new certificates..."
-    docker run --rm -v $SCRIPT_BASE/bwdata/bitbetter:/certs yaoa/bitbetter:certificate-gen-${BW_VERSION}
+    docker run --rm -v $SCRIPT_BASE/bwdata/bitbetter:/certs ghcr.io/alexyao2015/bitbetter:certificate-gen-${BW_VERSION}
     echo "Certificates generated!"
 else
     # Check if user wants to regenerate certificates
@@ -28,7 +28,7 @@ else
 
     if [[ $REGEN_CERT =~ ^[Yy]$ ]]
     then
-        docker run --rm -v $SCRIPT_BASE/bwdata/bitbetter:/certs yaoa/bitbetter:certificate-gen-${BW_VERSION}
+        docker run --rm -v $SCRIPT_BASE/bwdata/bitbetter:/certs ghcr.io/alexyao2015/bitbetter:certificate-gen-${BW_VERSION}
     else
         echo "Not creating new certificates!"
     fi
@@ -47,12 +47,12 @@ then
         echo ""
         echo "services:"
         echo "  api:"
-        echo "    image: yaoa/bitbetter:api-custom-$BW_VERSION"
+        echo "    image: ghcr.io/alexyao2015/bitbetter:api-custom-$BW_VERSION"
         echo "    volumes:"
         echo "      - ../bitbetter/cert.cert:/newLicensing.cer"
         echo ""
         echo "  identity:"
-        echo "    image: yaoa/bitbetter:identity-custom-$BW_VERSION"
+        echo "    image: ghcr.io/alexyao2015/bitbetter:identity-custom-$BW_VERSION"
         echo "    volumes:"
         echo "      - ../bitbetter/cert.cert:/newLicensing.cer"
         echo ""
