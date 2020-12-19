@@ -27,7 +27,7 @@ jobs:
           docker run --rm -v $PWD/publicKeys:/certs bitbetter/certificate-gen
           echo false > regenerate_cert.txt
           git config user.name alexyao2015
-          git config user.email alexyao2015@github.com
+          git config user.email alexyao2015@gmail.com
           git add .
           git commit -m "Regenerate Certificate"
           git push
@@ -54,6 +54,9 @@ jobs:
           fi
           echo "##[set-output name=buildimage;]$NEED_BUILD"
           echo "##[set-output name=buildversion;]$BW_VERSION_LATEST"
+          echo Build required: ${NEED_BUILD}
+          echo Last build version: ${BW_VERSION_LAST_BUILT}
+          echo Build version: ${BW_VERSION_LATEST}
 
   build_bitbetter:
     runs-on: ubuntu-latest
@@ -177,11 +180,13 @@ jobs:
       - uses: actions/checkout@v2
         with:
           ref: 'public'
+      # May fail if a push occurs but there is no new version to commit
       - name: Save Version Number
+        continue-on-error: true
         run: |
           echo ${VERSION} > bw_version.txt
           git config user.name alexyao2015
-          git config user.email alexyao2015@github.com
+          git config user.email alexyao2015@gmail.com
           git add .
           git commit -m "Bitwarden Version Update"
           git push
