@@ -102,7 +102,7 @@ jobs:
       - name: Build
         run: |
           docker build \
-            --build-arg ${{ matrix.build_arg }}:${VERSION}
+            --build-arg ${{ matrix.build_arg }}:${VERSION} \
             --tag bitbetter/${{ matrix.image_name }}:ci-${{ github.run_number }} \
             --progress plain \
             --file ${{ matrix.src_location }} \
