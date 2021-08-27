@@ -11,9 +11,12 @@ RUN set -ex \
 	&& dotnet restore \
 	&& dotnet publish -o bin
 
-FROM ${BITWARDEN_TAG} as public
+FROM ${BITWARDEN_TAG} as base
 
-COPY --from=build /bitBetter/bin/bitBetter.dll /bitBetter/
+COPY --from=build /bitBetter/bin/* /bitBetter/
+
+FROM base as public
+
 COPY ./publicKeys/cert.cert /newLicensing.cer
 
 RUN set -ex \
@@ -23,10 +26,10 @@ RUN set -ex \
     && rm -rf /bitBetter \
     && rm -rf /newLicensing.cer
 
-FROM ${BITWARDEN_TAG} as custom
+FROM base as custom
 
-COPY --from=build /bitBetter/bin/bitBetter.dll /bitBetter/
 COPY ./src/bitBetter/bitbetter-entrypoint.sh /
-RUN chmod +x /bitbetter-entrypoint.sh
+RUN set -ex \
+    && chmod +x /bitbetter-entrypoint.sh
 
 ENTRYPOINT [ "/bitbetter-entrypoint.sh" ]

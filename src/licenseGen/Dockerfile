@@ -12,15 +12,16 @@ RUN set -ex \
 	&& dotnet publish -o bin
 
 
-FROM ${BITWARDEN_TAG} as public
+FROM ${BITWARDEN_TAG} as base
 
-COPY --from=build /licenseGen/bin/licenseGen.dll /app/
+COPY --from=build /licenseGen/bin/* /app/
+
+FROM base as public
+
 COPY ./publicKeys/cert.pfx /cert.pfx
 
 ENTRYPOINT [ "dotnet", "/app/licenseGen.dll", "--core", "/app/Core.dll", "--cert", "/cert.pfx", "interactive" ]
 
-FROM ${BITWARDEN_TAG} as custom
-
-COPY --from=build /licenseGen/bin/licenseGen.dll /app/
+FROM base as custom
 
 ENTRYPOINT [ "dotnet", "/app/licenseGen.dll", "--core", "/app/Core.dll", "--cert", "/cert.pfx", "interactive" ]
