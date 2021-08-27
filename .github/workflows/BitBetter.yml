@@ -71,25 +71,32 @@ jobs:
           - image_name: api
             src_location: ./src/bitBetter/Dockerfile
             build_arg: BITWARDEN_TAG=bitwarden/api
+            target: public
           - image_name: identity
             src_location: ./src/bitBetter/Dockerfile
             build_arg: BITWARDEN_TAG=bitwarden/identity
+            target: public
           - image_name: licensegen
             src_location: ./src/licenseGen/Dockerfile
             build_arg: BITWARDEN_TAG=bitwarden/api
+            target: public
 
           - image_name: api-custom
-            src_location: ./src/bitBetter/Dockerfile.custom
+            src_location: ./src/bitBetter/Dockerfile
             build_arg: BITWARDEN_TAG=bitwarden/api
+            target: custom
           - image_name: identity-custom
-            src_location: ./src/bitBetter/Dockerfile.custom
+            src_location: ./src/bitBetter/Dockerfile
             build_arg: BITWARDEN_TAG=bitwarden/identity
+            target: custom
           - image_name: licensegen-custom
             src_location: ./src/licenseGen/Dockerfile
             build_arg: BITWARDEN_TAG=bitwarden/api
+            target: custom
           - image_name: certificate-gen
             src_location: ./publicKeys/Dockerfile
             build_arg: BITWARDEN_TAG=bitwarden/api
+            target: custom
 
     steps:
       - uses: actions/checkout@v2
@@ -103,6 +110,7 @@ jobs:
         run: |
           docker build \
             --build-arg ${{ matrix.build_arg }}:${VERSION} \
+            --target ${{ matrix.target }} \
             --tag bitbetter/${{ matrix.image_name }}:ci-${{ github.run_number }} \
             --progress plain \
             --file ${{ matrix.src_location }} \

@@ -1,7 +1,7 @@
 # Just here to please docker and allow for code reuse
 ARG BITWARDEN_TAG
 
-FROM alpine:latest
+FROM alpine:latest as custom
 
 RUN apk update && \
   apk add --no-cache openssl && \
