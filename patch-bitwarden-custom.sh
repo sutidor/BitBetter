@@ -56,9 +56,9 @@ RECREATE_OV=${tmprecreate:-$RECREATE_OV}
 if [[ $RECREATE_OV =~ ^[Yy]$ ]]
 then
     yq -i eval '.version = "3"' bwdata/docker/docker-compose.override.yml
-    yq -i eval ".services.api.image = \"ghcr.io/alexyao2015/bitbetter:api-$BW_VERSION\"" bwdata/docker/docker-compose.override.yml
+    yq -i eval ".services.api.image = \"ghcr.io/alexyao2015/bitbetter:api-custom-$BW_VERSION\"" bwdata/docker/docker-compose.override.yml
     yq -i eval '.services.api.volumes = ["../bitbetter/cert.cert:/newLicensing.cer"]'  bwdata/docker/docker-compose.override.yml
-    yq -i eval ".services.identity.image = \"ghcr.io/alexyao2015/bitbetter:identity-$BW_VERSION\"" bwdata/docker/docker-compose.override.yml
+    yq -i eval ".services.identity.image = \"ghcr.io/alexyao2015/bitbetter:identity-custom-$BW_VERSION\"" bwdata/docker/docker-compose.override.yml
     yq -i eval '.services.identity.volumes = ["../bitbetter/cert.cert:/newLicensing.cer"]' bwdata/docker/docker-compose.override.yml
     echo "BitBetter docker-compose override updated!"
 else
